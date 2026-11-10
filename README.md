@@ -41,9 +41,9 @@ O diretório `/usr/plugins/net/cloudflared` já existe na árvore oficial, entã
 
 ```sh
 cd /usr/plugins/net/
-git clone https://github.com/AlanMartines/os-cloudflared cloudflared-dev
+git clone https://github.com/wandersonmaracaipe/os-cloudflared-v2.git cloudflared-dev
 cd cloudflared-dev
-make install
+make upgrade
 service configd restart
 ```
 
@@ -55,6 +55,20 @@ Faça logout e login no OPNsense para o menu aparecer.
 cd /usr/plugins/net/cloudflared-dev
 make package
 ```
+
+### Atualizar o binário do `cloudflared` no FreeBSD (Compilação Cross-Platform)
+
+Caso o pacote oficial do FreeBSD/OPNsense esteja defasado em relação aos lançamentos da Cloudflare (ex: versão 2026.10.7+), é possível compilar o binário estático para FreeBSD (`GOOS=freebsd GOARCH=amd64`) utilizando Docker com a imagem `golang:alpine`:
+
+1. O upstream `cloudflare/cloudflared` necessita de stubs/tags para compilação em FreeBSD no pacote `diagnostic` e no serviço genérico (`createTokenFile = createTokenFileUnix`).
+2. Adicione `//go:build freebsd` no coletor de diagnósticos (`diagnostic/system_collector_freebsd.go`) e a tag `freebsd` em `diagnostic/network/collector_unix.go`.
+3. Compile estaticamente:
+```sh
+CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -trimpath \
+  -ldflags="-s -w -X main.Version=2026.10.7 -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -o cloudflared ./cmd/cloudflared
+```
+4. Transfira para o OPNsense em `/usr/local/bin/cloudflared` com permissão de execução (`chmod 755 /usr/local/bin/cloudflared`) e reinicie o serviço (`service cloudflared restart`).
 
 ### Propor mudanças ao oficial
 
