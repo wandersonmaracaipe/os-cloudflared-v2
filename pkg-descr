@@ -1,7 +1,15 @@
-Integrates the Cloudflare Tunnel daemon (cloudflared) into OPNsense,
+Integrates the modern Cloudflare Tunnel daemon (cloudflared) into OPNsense,
 allowing self-hosted services to be exposed through Cloudflare Zero Trust
 without requiring inbound firewall rules or a public IP address.
 
-WWW: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+Features:
+o Live tunnel connectivity status and Edge connection tracking
+o Configurable Prometheus metrics exporter
+o RFC 5424 and Zerolog logging with automatic syslog-ng rotation
+o Modern daemon support (cloudflared 2026.11.1+)
+o Continuously maintained and updated by Valuor
 
-Inspired by original work by Alan Martines <alancpmartines@hotmail.com>.
+WWW: https://github.com/wandersonmaracaipe/os-cloudflared-v2
+
+Maintainer: Wanderson Maracaipe <wanderson@valuor.com.br>
+Inspired by original work by Alan Martines and Richard Aspden.

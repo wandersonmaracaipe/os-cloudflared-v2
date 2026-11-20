@@ -1,22 +1,23 @@
-# OPNsense Plugin: os-cloudflared (v1.2)
+# OPNsense Plugin: os-cloudflared-v2 (v2.0.0)
 
 <p align="center">
   <img src="/os-cloudflared.png" alt="Cloudflared" width="400">
 </p>
 
-Plugin que integra o **Cloudflare Tunnel (cloudflared)** ao OPNsense, permitindo expor serviços internos via Cloudflare Zero Trust sem abrir portas no firewall nem depender de IP público.
+Plugin independente e modernizado que integra o **Cloudflare Zero Trust Tunnel (cloudflared)** ao OPNsense, permitindo expor serviços internos com máxima segurança, sem abrir portas no firewall nem depender de IP público.
 
-> **Este repositório é um ambiente de desenvolvimento e distribuição.** A versão oficial da comunidade está em [opnsense/plugins › net/cloudflared](https://github.com/opnsense/plugins/tree/master/net/cloudflared) (mantenedor: Richard Aspden). Este repositório aprimora o plugin com suporte à versão mais recente do daemon (**cloudflared 2026.11.1**), status em tempo real do túnel, exportação de métricas Prometheus, rotação de logs e distribuição nativa via catálogo de plugins do OPNsense.
+> Mantido ativamente por **Wanderson Maracaipe** (<wanderson@valuor.com.br>) e distribuído pela **Valuor**. Este projeto aprimora o ecossistema com suporte à versão mais recente do daemon (**cloudflared 2026.11.1+**), status em tempo real do túnel, exportação de métricas Prometheus, rotação de logs estruturados e distribuição nativa via catálogo de plugins do OPNsense.
 
 ---
 
-## Novidades da Versão 1.2
+## Novidades da Versão 2.0.0
+- **Novo Pacote Independente:** Registrado como `os-cloudflared-v2` com controle e ciclo de atualizações próprio.
 - **Compatibilidade com `cloudflared` 2026.11.1:** Compilado nativamente com Go 1.27.4 para `FreeBSD:15:amd64`.
 - **Status do Túnel em Tempo Real:** Verificação ao vivo das conexões com o edge da Cloudflare através do endpoint `/ready` e widget de status no Web GUI.
 - **Endereço de Métricas Configurável:** Opção no Web GUI para definir a porta/IP do exportador de métricas Prometheus (padrão `localhost:2000`, ou vazio para liberar a porta).
 - **Logs Estruturados via Syslog-ng:** Rotação automática e parsing de logs em formato RFC 5424 e Zerolog em **Services → Cloudflare Tunnel → Log File**.
-- **Distribuição via Catálogo PKG do OPNsense:** Disponibilização direta em **System → Firmware → Plugins** com suporte a instalação, reinstalação e atualização pela interface visual.
-- **Proteção contra Downgrades:** Configuração de prioridade de repositório (`priority: 20`) impedindo que o OPNsense substitua o binário pelo pacote defasado do repositório upstream (`2026.2.0_10`).
+- **Distribuição via Catálogo PKG do OPNsense:** Disponibilização direta em **System → Firmware → Plugins** sob o repositório **Valuor**.
+- **Conflito Seguro:** Configurado com `PLUGIN_CONFLICTS=os-cloudflared` para substituir versões antigas com segurança.
 
 ---
 

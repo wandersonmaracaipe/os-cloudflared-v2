@@ -1,14 +1,16 @@
 # CHANGELOG
 
-## 1.2.0 (2026-11-20)
-_Lançamento com melhorias completas e suporte ao Cloudflared 2026.11.1 no FreeBSD 15 (amd64)._
+## 2.0.0 (2026-11-20)
+_Lançamento independente como `os-cloudflared-v2`, mantido por Wanderson Maracaipe (Valuor)._
 
 ### Novas Funcionalidades
+- **Pacote independente `os-cloudflared-v2`:** Registrado separadamente no ecossistema com mantenedor `wanderson@valuor.com.br`.
 - **Suporte ao daemon `cloudflared` 2026.11.1:** Compilado com Go 1.27.4 para `FreeBSD:15:amd64`.
 - **Status do túnel em tempo real:** Verificação ao vivo no endpoint local `/ready` (`tunnel_status.py`) e exibição de conexões ativas no Web GUI.
 - **Endereço de métricas configurável:** Configuração de `metrics` em `config.yml` (padrão `localhost:2000`, ou vazio para liberar a porta).
 - **Logs estruturados via Syslog-ng:** Daemon configurado com `cloudflared_flags="-S -T cloudflared"` e parser com suporte a RFC 5424 e Zerolog em `/var/log/cloudflared/`.
 - **Distribuição via Catálogo do OPNsense:** Repositório `Valuor.conf` (`priority: 20`) permitindo instalação e atualização gráfica via **System → Firmware → Plugins**.
+- **Conflito Seguro:** Adicionado `PLUGIN_CONFLICTS=os-cloudflared os-cloudflared-devel`.
 
 ### Correções e Melhorias
 - Token de túnel: aceita caracteres `+`, `/` e `=` de base64 padrão.
