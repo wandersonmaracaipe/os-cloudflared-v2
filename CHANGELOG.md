@@ -1,20 +1,21 @@
 # CHANGELOG
 
-## Em validação (ainda não enviado ao upstream)
-_Base: upstream `833b944`. Cada item é um commit independente, a ser validado na VM e enviado como PR separado ao opnsense/plugins._
+## 1.2.0 (2026-11-20)
+_Lançamento com melhorias completas e suporte ao Cloudflared 2026.11.1 no FreeBSD 15 (amd64)._
 
-| Item | Commit | Validado na VM |
-|---|---|---|
-| Token aceita `+` e `/` (base64 padrão) | `net/cloudflared: allow + and / in tunnel token` | ✅ 2026-10-20 |
-| Token obrigatório só com o serviço ativado | `net/cloudflared: only require tunnel token when enabled` | ✅ 2026-10-20 |
-| Pós-quântico com HTTP/2 recusado na validação | `net/cloudflared: reject post-quantum with HTTP/2` | ✅ 2026-10-20 |
-| Gancho `newwanip` não inicia o serviço desativado | `net/cloudflared: skip newwanip start when disabled` | ✅ 2026-10-20 |
-| Versão de IP do edge: padrão IPv4 rotulado corretamente, opção Auto, valor no `config.yml` | `net/cloudflared: fix edge IP version default and add auto` | ✅ 2026-10-20 |
-| Endereço de métricas configurável (padrão `localhost:2000`, vazio = porta livre) | `net/cloudflared: make metrics address configurable` | ✅ 2026-10-20 |
-| Status de conexão do túnel na página (endpoint `/ready`) | `net/cloudflared: show tunnel connection status` | ✅ 2026-10-20 |
-| Saída do daemon enviada ao syslog, com rotação do syslog-ng | `net/cloudflared: send daemon output to syslog` | ✅ 2026-10-20 |
+### Novas Funcionalidades
+- **Suporte ao daemon `cloudflared` 2026.11.1:** Compilado com Go 1.27.4 para `FreeBSD:15:amd64`.
+- **Status do túnel em tempo real:** Verificação ao vivo no endpoint local `/ready` (`tunnel_status.py`) e exibição de conexões ativas no Web GUI.
+- **Endereço de métricas configurável:** Configuração de `metrics` em `config.yml` (padrão `localhost:2000`, ou vazio para liberar a porta).
+- **Logs estruturados via Syslog-ng:** Daemon configurado com `cloudflared_flags="-S -T cloudflared"` e parser com suporte a RFC 5424 e Zerolog em `/var/log/cloudflared/`.
+- **Distribuição via Catálogo do OPNsense:** Repositório `Valuor.conf` (`priority: 20`) permitindo instalação e atualização gráfica via **System → Firmware → Plugins**.
 
-Fora do plugin: reinício automático do processo depende de alterar o rc.d do port `net/cloudflared` (`daemon -r -P`).
+### Correções e Melhorias
+- Token de túnel: aceita caracteres `+`, `/` e `=` de base64 padrão.
+- Token obrigatório apenas quando o serviço está ativado (`enabled=1`).
+- Pós-quântico com protocolo HTTP/2 é bloqueado na validação do formulário.
+- Gancho `newwanip`: ignora início do serviço se estiver desativado no OPNsense.
+- Versão de IP do edge: padrão IPv4 rotulado corretamente, inclusão da opção Auto e persistência em `config.yml`.
 
 ---
 

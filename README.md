@@ -1,4 +1,4 @@
-# OPNsense Plugin: os-cloudflared (repositório de desenvolvimento)
+# OPNsense Plugin: os-cloudflared (v1.2)
 
 <p align="center">
   <img src="/os-cloudflared.png" alt="Cloudflared" width="400">
@@ -6,39 +6,63 @@
 
 Plugin que integra o **Cloudflare Tunnel (cloudflared)** ao OPNsense, permitindo expor serviços internos via Cloudflare Zero Trust sem abrir portas no firewall nem depender de IP público.
 
-> **Este repositório é um espelho de desenvolvimento.** A versão oficial e mantida do plugin está em [opnsense/plugins › net/cloudflared](https://github.com/opnsense/plugins/tree/master/net/cloudflared) (mantenedor: Richard Aspden). Este repositório serve para testar mudanças e propor PRs ao oficial. Usuários finais devem instalar o plugin oficial pelo **System → Firmware → Plugins** (`os-cloudflared`).
+> **Este repositório é um ambiente de desenvolvimento e distribuição.** A versão oficial da comunidade está em [opnsense/plugins › net/cloudflared](https://github.com/opnsense/plugins/tree/master/net/cloudflared) (mantenedor: Richard Aspden). Este repositório aprimora o plugin com suporte à versão mais recente do daemon (**cloudflared 2026.11.1**), status em tempo real do túnel, exportação de métricas Prometheus, rotação de logs e distribuição nativa via catálogo de plugins do OPNsense.
 
-Baseado no upstream no commit [`833b944`](https://github.com/opnsense/plugins/commit/833b94414ff01ddec22c4f9e3d84c5dd1e1cbdab) (versão 1.1_1), com correções ainda em validação listadas no [CHANGELOG](CHANGELOG.md).
+---
 
-## Funcionalidades
+## Novidades da Versão 1.2
+- **Compatibilidade com `cloudflared` 2026.11.1:** Compilado nativamente com Go 1.27.4 para `FreeBSD:15:amd64`.
+- **Status do Túnel em Tempo Real:** Verificação ao vivo das conexões com o edge da Cloudflare através do endpoint `/ready` e widget de status no Web GUI.
+- **Endereço de Métricas Configurável:** Opção no Web GUI para definir a porta/IP do exportador de métricas Prometheus (padrão `localhost:2000`, ou vazio para liberar a porta).
+- **Logs Estruturados via Syslog-ng:** Rotação automática e parsing de logs em formato RFC 5424 e Zerolog em **Services → Cloudflare Tunnel → Log File**.
+- **Distribuição via Catálogo PKG do OPNsense:** Disponibilização direta em **System → Firmware → Plugins** com suporte a instalação, reinstalação e atualização pela interface visual.
+- **Proteção contra Downgrades:** Configuração de prioridade de repositório (`priority: 20`) impedindo que o OPNsense substitua o binário pelo pacote defasado do repositório upstream (`2026.2.0_10`).
 
-- Interface MVC nativa em **Services → Cloudflare Tunnel**
-- Autenticação por token de túnel gerenciado (Cloudflare Zero Trust)
-- Binário fornecido pelo pacote `cloudflared` do repositório do OPNsense (`PLUGIN_DEPENDS`), com o rc.d do próprio pacote
-- Token entregue ao processo via variável de ambiente `TUNNEL_TOKEN` (não aparece nos argumentos do processo)
-- Opções geradas em `/usr/local/etc/cloudflared/config.yml`: protocolo (auto/QUIC/HTTP2), criptografia pós-quântica, desativar QUIC PMTU discovery, versão de IP do edge (padrão IPv4, IPv6 ou Auto), endereço de métricas, nível de log
-- Status de conexão do túnel na página (conexões ativas com o edge da Cloudflare)
-- `no-autoupdate` sempre ativo — atualizações chegam pelo pacote
-- Logs enviados ao syslog-ng (`/var/log/cloudflared/`, com rotação), visíveis em **Services → Cloudflare Tunnel → Log File**
-- Integração com **System → Diagnostics → Services**
-- Reinício do serviço em mudança de IP da WAN (`newwanip`)
-- Sincronização de configuração em HA (XMLRPC)
+---
 
-## Desenvolvimento
+## Como Exibir no Catálogo do OPNsense (System → Firmware → Plugins)
 
-### Pré-requisitos (uma única vez)
+Para que o plugin e as atualizações do daemon apareçam diretamente no catálogo da interface gráfica do OPNsense, utilizamos um repositório `pkg` de alta prioridade.
 
+### 1. No OPNsense (via SSH / Console):
+Crie o arquivo de repositório em `/usr/local/etc/pkg/repos/Valuor.conf`:
+
+```text
+Valuor: {
+  url: "file:///usr/local/share/valuor-repo/${ABI}",
+  signature_type: "none",
+  priority: 20,
+  enabled: yes
+}
+```
+
+> **Nota sobre o nome do repositório:** O identificador `Valuor` é o que aparecerá na coluna **Repository** dentro da tela de Plugins do OPNsense. A `priority: 20` garante precedência sobre o repositório padrão `OPNsense` (`priority: 11`).
+
+### 2. Estrutura do Diretório do Repositório:
+No diretório `/usr/local/share/valuor-repo/FreeBSD:15:amd64/` ficam os pacotes e o índice gerado pelo `pkg repo`:
+- `os-cloudflared-1.2.pkg`
+- `cloudflared-2026.11.1.pkg`
+- `meta.conf`, `packagesite.pkg`, `data.pkg`
+
+### 3. Atualizar o Catálogo:
+Execute:
+```sh
+pkg update
+```
+
+Pronto! Ao acessar **System → Firmware → Plugins** no Web GUI do OPNsense, o plugin **`os-cloudflared` 1.2** estará listado com status de instalação e pronto para atualizações diretas pela interface.
+
+---
+
+## Desenvolvimento e Instalação Manual
+
+### Pré-requisitos
 ```sh
 opnsense-code plugins
 pkg install cloudflared
 ```
 
-> `make install` não resolve dependências; o pacote `cloudflared` precisa ser instalado manualmente.
-
-### Instalar a partir deste repositório
-
-O diretório `/usr/plugins/net/cloudflared` já existe na árvore oficial, então clone em um diretório separado no mesmo nível (o `Makefile` inclui `../../Mk/plugins.mk`):
-
+### Instalação via Código-Fonte (Árvore de Plugins)
 ```sh
 cd /usr/plugins/net/
 git clone https://github.com/wandersonmaracaipe/os-cloudflared-v2.git cloudflared-dev
@@ -47,85 +71,71 @@ make upgrade
 service configd restart
 ```
 
-Faça logout e login no OPNsense para o menu aparecer.
-
-### Gerar pacote
-
+### Gerar o Pacote do Plugin
 ```sh
 cd /usr/plugins/net/cloudflared-dev
 make package
 ```
+O pacote `.pkg` será gerado em `work/pkg/os-cloudflared-1.2.pkg`.
 
-### Atualizar o binário do `cloudflared` no FreeBSD (Compilação Cross-Platform)
+---
 
-Caso o pacote oficial do FreeBSD/OPNsense esteja defasado em relação aos lançamentos da Cloudflare (ex: versão 2026.10.7+), é possível compilar o binário estático para FreeBSD (`GOOS=freebsd GOARCH=amd64`) utilizando Docker com a imagem `golang:alpine`:
+## Compilação do `cloudflared` 2026.11.1 para FreeBSD 15 (Cross-Compilation)
 
-1. O upstream `cloudflare/cloudflared` necessita de stubs/tags para compilação em FreeBSD no pacote `diagnostic` e no serviço genérico (`createTokenFile = createTokenFileUnix`).
-2. Adicione `//go:build freebsd` no coletor de diagnósticos (`diagnostic/system_collector_freebsd.go`) e a tag `freebsd` em `diagnostic/network/collector_unix.go`.
-3. Compile estaticamente:
+Como o port oficial do FreeBSD (`net/cloudflared`) frequentemente fica defasado em relação aos lançamentos da Cloudflare, o binário pode ser compilado estaticamente para FreeBSD (`GOOS=freebsd GOARCH=amd64`) utilizando Docker:
+
 ```sh
-CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -trimpath \
-  -ldflags="-s -w -X main.Version=2026.10.7 -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  -o cloudflared ./cmd/cloudflared
+# Obter imagem Go mais recente (Go >= 1.27.4)
+docker pull golang:alpine
+
+# Clonar cloudflared na versão desejada
+git clone --depth 1 --branch 2026.11.1 https://github.com/cloudflare/cloudflared.git /tmp/build_cf
+cd /tmp/build_cf
+
+# Adicionar tags de compilação FreeBSD onde necessário:
+# 1. //go:build freebsd em diagnostic/system_collector_freebsd.go
+# 2. Tag freebsd em diagnostic/network/collector_unix.go
+# 3. createTokenFile = createTokenFileUnix em cmd/cloudflared/tunnel/subcommand.go
+
+# Compilar estaticamente:
+docker run --rm -v /tmp/build_cf:/src -w /src golang:alpine sh -c \
+  "apk add --no-cache git && \
+   CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -trimpath \
+   -ldflags='-s -w -X main.Version=2026.11.1 -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)' \
+   -o /src/cloudflared ./cmd/cloudflared"
 ```
-4. Transfira para o OPNsense em `/usr/local/bin/cloudflared` com permissão de execução (`chmod 755 /usr/local/bin/cloudflared`) e reinicie o serviço (`service cloudflared restart`).
 
-### Propor mudanças ao oficial
+Copie o binário gerado para o OPNsense em `/usr/local/bin/cloudflared` (`chmod 755 /usr/local/bin/cloudflared`).
 
-1. Faça um fork de [opnsense/plugins](https://github.com/opnsense/plugins).
-2. Copie as alterações deste repositório para `net/cloudflared/` no fork (somente `Makefile`, `pkg-descr` e `src/`).
-3. Incremente `PLUGIN_REVISION` (correções) ou `PLUGIN_VERSION` (funcionalidades) no `Makefile`.
-4. Rode `make style` e `make lint` na árvore de plugins.
-5. Abra o PR com título no formato `net/cloudflared: descrição`.
+---
 
-## Como usar
+## Como Usar o Plugin
 
-1. Em [Cloudflare Zero Trust](https://one.dash.cloudflare.com/), vá em **Networks → Tunnels**, crie ou selecione um túnel e copie o token.
+1. No [Cloudflare Zero Trust](https://one.dash.cloudflare.com/), vá em **Networks → Tunnels**, crie um túnel e copie o token gerado.
 2. No OPNsense, acesse **Services → Cloudflare Tunnel**.
-3. Marque **Enable**, cole o token em **Tunnel Token** e clique em **Apply**.
-4. Opções avançadas (protocolo, pós-quântico, PMTU, versão de IP) ficam visíveis ao ativar o modo avançado do formulário.
+3. Marque **Enable**, cole o token no campo **Tunnel Token** e clique em **Apply**.
+4. Em opções avançadas, configure protocolo (QUIC/HTTP2), pós-quântico, versão de IP do edge e porta de métricas.
 
-Verificação:
-
+### Verificação do Status:
 ```sh
 service cloudflared status
-cat /usr/local/etc/cloudflared/config.yml
+cloudflared --version
 configctl cloudflared tunnel_status
 tail -f /var/log/cloudflared/cloudflared_$(date +%Y%m%d).log
 ```
 
-Na página do plugin, **Tunnel Status** deve mostrar **Connected**. No dashboard da Cloudflare, o túnel deve aparecer como **Healthy**.
+No Web GUI do OPNsense, o painel indicará **Status: Connected** com a quantidade de conexões ativas com o edge da Cloudflare.
 
-## Migração a partir da versão 0.4.0 deste repositório
+---
 
-A versão 0.4.0 instalava um binário próprio (fork kjake) e um rc.d próprio **nos mesmos caminhos** usados pelo pacote `cloudflared`. Remova-os antes de instalar o pacote:
+## Contribuindo com o Upstream Oficial (`opnsense/plugins`)
 
-```sh
-service cloudflared stop
+Para submeter melhorias ao repositório oficial mundial do OPNsense:
+1. Faça um Fork de [opnsense/plugins](https://github.com/opnsense/plugins) no GitHub.
+2. Copie os arquivos de `src/`, `Makefile` e `pkg-descr` deste repositório para `net/cloudflared/` no fork.
+3. Crie uma branch (ex: `net/cloudflared-1.2`) e abra um Pull Request apontando para a branch `master` do [opnsense/plugins](https://github.com/opnsense/plugins).
 
-# Arquivos da 0.4.0 que conflitam com o pacote cloudflared
-rm -f /usr/local/bin/cloudflared
-rm -f /usr/local/etc/rc.d/cloudflared
-
-# Arquivos da 0.4.0 que não são mais usados
-rm -f /usr/local/etc/cloudflared/token
-rm -f /usr/local/etc/sysctl.conf.d/cloudflared.conf
-rm -f /var/log/cloudflared.log
-rm -f /usr/local/opnsense/mvc/app/languages/*/cloudflared*
-rm -rf /usr/local/opnsense/scripts/OPNsense/Cloudflared
-
-pkg install cloudflared
-```
-
-Depois instale o plugin (oficial ou deste repositório) e clique em **Apply** na página do plugin.
-
-Configuração existente:
-
-- `enabled`, `token` e `post_quantum` são mantidos (mesmo ponto de montagem `//OPNsense/Cloudflared`).
-- `no_autoupdate`, `kern_ipc_maxsockbuf` e `net_inet_udp_recvspace` deixam de existir e são descartados no próximo salvamento.
-- Os sysctl aplicados pela 0.4.0 valem só até o próximo reboot. Para mantê-los, adicione em **System → Settings → Tunables**:
-  - `kern.ipc.maxsockbuf = 16777216`
-  - `net.inet.udp.recvspace = 8388608`
+---
 
 ## Licença
 
@@ -134,4 +144,5 @@ BSD 2-Clause — mesma licença do OPNsense.
 ## Créditos
 
 - Plugin oficial: Richard Aspden e equipe OPNsense ([opnsense/plugins](https://github.com/opnsense/plugins/tree/master/net/cloudflared))
+- Adaptações, cross-compilação e catálogo Valuor: Wanderson Maracaipe
 - Trabalho original: Alan Martines
